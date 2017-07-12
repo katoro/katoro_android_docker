@@ -18,8 +18,8 @@ ENV PATH ${GRADLE_HOME}/bin:$PATH
 
 # android sdk|build-tools|image
 ENV ANDROID_TARGET_SDK="android-24,android-25" \
-    ANDROID_BUILD_TOOLS="build-tools-24.0.2,build-tools-24.0.3,build-tools-25.0.2" \
-    ANDROID_SDK_TOOLS="25.2.3" \
+    ANDROID_BUILD_TOOLS="build-tools-24.0.2,build-tools-24.0.3,build-tools-25.0.3" \
+    ANDROID_SDK_TOOLS="25.0.3" \
     ANDROID_IMAGES="sys-img-armeabi-v7a-android-23,sys-img-armeabi-v7a-android-24"
 ENV ANDROID_HOME ${SDK_HOME}/android-sdk-linux
 
