@@ -60,7 +60,7 @@ RUN chmod u+x ${ANDROID_NDK_HOME}/ -R
  
 ENV OPEN_CV_ANDROID_SDK_REVISION 3.2.0
 ENV OPEN_CV_ROOT /opt/opencv-${OPEN_CV_ANDROID_SDK_REVISION}
-RUN curl -Lk https://github.com/Itseez/opencv/archive/${OPEN_CV_ANDROID_SDK_REVISION}.zip -o opencv.zip \
+RUN curl -Lk https://sourceforge.net/projects/opencvlibrary/files/opencv-android/${OPEN_CV_ANDROID_SDK_REVISION}/opencv-${OPEN_CV_ANDROID_SDK_REVISION}-android-sdk.zip -o opencv.zip \
  && unzip opencv.zip -d /opt \
  && chown -R $USER:$USER $OPEN_CV_ROOT \
  && rm opencv.zip
