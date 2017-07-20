@@ -1,56 +1,45 @@
-FROM openjdk:8-jdk
 
-ENV SDK_HOME /opt
+FROM jetbrains/teamcity-agent:10.0.3
 
-WORKDIR $SDK_HOME
+ENV USER buildagent
+ENV ANDROID_HOME /opt/android-sdk-linux
+ENV ANDROID_SDK_TOOLS_REVISION 25.0.3
+ENV ANDROID_NDK_REVISION 13b
+ENV ANDROID_NDK /opt/android-ndk-r${ANDROID_NDK_REVISION}
+ENV OPEN_CV_ANDROID_SDK_REVISION 3.2.0
+ENV OPEN_CV_ROOT /opt/opencv-${OPEN_CV_ANDROID_SDK_REVISION}
 
-RUN apt-get --quiet update --yes
-RUN apt-get --quiet install --yes wget tar unzip lib32stdc++6 lib32z1 git file build-essential --no-install-recommends
+# Prepare the build agent to start as the buildagent user
+RUN apt-get install --no-install-recommends -y sudo git git-crypt \
+ && chown -R $USER:$USER /opt/buildagent \
+ && sed -i 's/${AGENT_DIST}\/bin\/agent.sh start/sudo -Eu buildagent ${AGENT_DIST}\/bin\/agent.sh start/' \
+    /run-agent.sh
 
-# Gradle
-ENV GRADLE_VERSION 4.0
-ENV GRADLE_SDK_URL https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip
-RUN curl -sSL "${GRADLE_SDK_URL}" -o gradle-${GRADLE_VERSION}-bin.zip  \
-	&& unzip gradle-${GRADLE_VERSION}-bin.zip -d ${SDK_HOME}  \
-	&& rm -rf gradle-${GRADLE_VERSION}-bin.zip
-ENV GRADLE_HOME ${SDK_HOME}/gradle-${GRADLE_VERSION}
-ENV PATH ${GRADLE_HOME}/bin:$PATH
+# Import the Let's Encrypt Authority certificate for Java to accept TeamCity server certificate
+RUN curl -o /root/lets-encrypt.der https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.der \
+ && $JRE_HOME/bin/keytool -trustcacerts -keystore $JRE_HOME/lib/security/cacerts -storepass changeit \
+    -noprompt -importcert -alias lets-encrypt-x3-cross-signed -file /root/lets-encrypt.der \
+ && rm /root/lets-encrypt.der
 
-# android sdk|build-tools|image
-ENV ANDROID_TARGET_SDK="android-24,android-25" \
-    ANDROID_BUILD_TOOLS="build-tools-24.0.2,build-tools-24.0.3,build-tools-25.0.3" \
-    ANDROID_SDK_TOOLS="25.0.3" \
-    ANDROID_IMAGES="sys-img-armeabi-v7a-android-23,sys-img-armeabi-v7a-android-24"
-ENV ANDROID_HOME ${SDK_HOME}/android-sdk-linux
+# Install Android command line tools
+RUN curl https://dl.google.com/android/android-sdk_r${ANDROID_SDK_TOOLS_REVISION}-linux.tgz | tar xz -C /opt \
+ && chown -R $USER:$USER $ANDROID_HOME
 
-RUN mkdir ${ANDROID_HOME} && wget --quiet --output-document=android-sdk.zip https://dl.google.com/android/repository/tools_r${ANDROID_SDK_TOOLS}-linux.zip && \
-    unzip android-sdk.zip -d ${ANDROID_HOME}
+# Install Android licenses to not accept them manually during builds
+ADD licenses.tar.gz $ANDROID_HOME/
 
-ENV PATH ${ANDROID_HOME}/tools:${ANDROID_HOME}/platform-tools:$PATH
+# Install Android extra repos
+RUN echo y | sudo -u $USER $ANDROID_HOME/tools/android update sdk --no-ui --all --filter \
+extra-android-m2repository,extra-google-m2repository
 
-# Android Cmake
-RUN wget -q https://dl.google.com/android/repository/cmake-3.6.3155560-linux-x86_64.zip -O android-cmake.zip
-RUN unzip -q android-cmake.zip -d ${ANDROID_HOME}/cmake
-ENV PATH ${PATH}:${ANDROID_HOME}/cmake/bin
-RUN chmod u+x ${ANDROID_HOME}/cmake/bin/ -R
+# Install Android NDK
+RUN curl https://dl.google.com/android/repository/android-ndk-r${ANDROID_NDK_REVISION}-linux-x86_64.zip -o android-ndk.zip \
+ && unzip android-ndk.zip -d /opt \
+ && chown -R $USER:$USER $ANDROID_NDK \
+ && rm android-ndk.zip
 
-RUN echo y | android-sdk-linux/tools/android --silent update sdk --no-ui --all --filter "${ANDROID_TARGET_SDK}" && \
-    echo y | android-sdk-linux/tools/android --silent update sdk --no-ui --all --filter platform-tools && \
-    echo y | android-sdk-linux/tools/android --silent update sdk --no-ui --all --filter "${ANDROID_BUILD_TOOLS}"
-RUN echo y | android-sdk-linux/tools/android --silent update sdk --no-ui --all --filter extra-android-m2repository && \
-    echo y | android-sdk-linux/tools/android --silent update sdk --no-ui --all --filter extra-google-google_play_services && \
-    echo y | android-sdk-linux/tools/android --silent update sdk --no-ui --all --filter extra-google-m2repository
-#RUN echo y | android-sdk-linux/tools/android --silent update sdk --no-ui --all --filter "${ANDROID_IMAGES}" --force
-#RUN echo y | android-sdk-linux/tools/android --silent update sdk --filter extra --no-ui --force -a
-
-# Android NDK
-ENV ANDROID_NDK_VERSION r13b
-ENV ANDROID_NDK_URL http://dl.google.com/android/repository/android-ndk-${ANDROID_NDK_VERSION}-linux-x86_64.zip
-RUN curl -L "${ANDROID_NDK_URL}" -o android-ndk-${ANDROID_NDK_VERSION}-linux-x86_64.zip  \
-  && unzip android-ndk-${ANDROID_NDK_VERSION}-linux-x86_64.zip -d ${SDK_HOME}  \
-  && rm -rf android-ndk-${ANDROID_NDK_VERSION}-linux-x86_64.zip
-ENV ANDROID_NDK_HOME ${SDK_HOME}/android-ndk-${ANDROID_NDK_VERSION}
-ENV PATH ${ANDROID_NDK_HOME}:$PATH
-RUN chmod u+x ${ANDROID_NDK_HOME}/ -R
-
-# RUN mkdir ${ANDROID_HOME}/licenses && echo "8933bad161af4178b1185d1a37fbf41ea5269c55" >> ${ANDROID_HOME}/licenses/android-sdk-license
+ # Install OpenCV android sdk
+RUN curl -Lk https://github.com/Itseez/opencv/archive/${OPEN_CV_ANDROID_SDK_REVISION}.zip -o opencv.zip \
+ && unzip opencv.zip -d /opt \
+ && chown -R $USER:$USER $OPEN_CV_ROOT \
+ && rm opencv.zip
