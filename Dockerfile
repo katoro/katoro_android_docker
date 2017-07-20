@@ -56,10 +56,9 @@ RUN chmod u+x ${ANDROID_NDK_HOME}/ -R
 # RUN mkdir ${ANDROID_HOME}/licenses && echo "8933bad161af4178b1185d1a37fbf41ea5269c55" >> ${ANDROID_HOME}/licenses/android-sdk-license
 
 
- # Install OpenCV android sdk
  
 ENV OPEN_CV_ANDROID_SDK_REVISION 3.2.0
-ENV OPEN_CV_ROOT /opt/opencv-${OPEN_CV_ANDROID_SDK_REVISION}
+ENV OPEN_CV_ROOT /opt/OpenCV-android-sdk
 RUN curl -Lk https://sourceforge.net/projects/opencvlibrary/files/opencv-android/${OPEN_CV_ANDROID_SDK_REVISION}/opencv-${OPEN_CV_ANDROID_SDK_REVISION}-android-sdk.zip -o opencv.zip \
  && unzip opencv.zip -d /opt \
  && chown -R $USER:$USER $OPEN_CV_ROOT \
