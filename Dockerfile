@@ -19,11 +19,11 @@ ENV PATH ${GRADLE_HOME}/bin:$PATH
 # android sdk|build-tools|image
 ENV ANDROID_TARGET_SDK="android-24,android-25,android-26" \
     ANDROID_BUILD_TOOLS="build-tools-24.0.2,build-tools-24.0.3,build-tools-25.0.3,build-tools-26.0.1" \
-    ANDROID_SDK_TOOLS="26" \
+    ANDROID_SDK_TOOLS="25.0.3" \
     ANDROID_IMAGES="sys-img-armeabi-v7a-android-23,sys-img-armeabi-v7a-android-24"
 ENV ANDROID_HOME ${SDK_HOME}/android-sdk-linux
 
-RUN mkdir ${ANDROID_HOME} && wget --quiet --output-document=android-sdk.zip https://dl.google.com/android/repository/build-tools_r${ANDROID_SDK_TOOLS}-linux.zip && \
+RUN mkdir ${ANDROID_HOME} && wget --quiet --output-document=android-sdk.zip https://dl.google.com/android/repository/tools_r${ANDROID_SDK_TOOLS}-linux.zip && \
     unzip android-sdk.zip -d ${ANDROID_HOME}
 
 ENV PATH ${ANDROID_HOME}/tools:${ANDROID_HOME}/platform-tools:$PATH
